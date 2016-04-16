@@ -47,6 +47,11 @@ namespace FredCom
             ReaderThread = new Thread(read);
             ReaderThread.Start();
         }
+		
+		public void Close(){
+			ReaderThread.Interrupt();
+			sp.Close();
+		}
 
         void read()
         {
@@ -135,9 +140,12 @@ namespace FredCom
                 {
 
                 }
+				catch(ThreadInterruptedException){
+					break;
+				}
                 catch(Exception e)
                 {
-                    Console.WriteLine("leaving read loop:");
+                    Console.WriteLine("leaving read loop unexpectedly:");
                     Console.WriteLine(e);
                     break;
                 }
