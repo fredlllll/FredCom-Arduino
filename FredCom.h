@@ -17,7 +17,7 @@ public:
 		out_lastCodeIndex = 0;
 		out_transmissionID = 0;
 
-		Serial.write(0);//make sure that pc gets fresh frame before we send stuff
+		Serial.write((const uint8_t)0);//make sure that pc gets fresh frame before we send stuff
 	}
 
 	void sendMessage(uint8_t op, uint8_t *data, uint16_t offset, uint8_t len) {
