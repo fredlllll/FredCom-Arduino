@@ -1,0 +1,14 @@
+{
+  "name": "FredCom",
+  "keywords": "FredCom, Serial, Communication",
+  "description": "Library for easier serial communcation with pc",
+  "url": "",
+  "include": "FredCom.h",
+  "authors":
+  [
+	{
+      "name": "Frederik Gelder"
+    }
+  ],
+  "frameworks": "arduino"
+}

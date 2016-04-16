@@ -1,0 +1,24 @@
+#######################################
+# Syntax Coloring Map For FredCom Library
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+FredCom	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+sendMessage	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+#AUTOMATIC	LITERAL1
+#MANUAL	LITERAL1
+#DIRECT	LITERAL1
+#REVERSE	LITERAL1
