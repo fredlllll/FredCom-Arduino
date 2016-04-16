@@ -43,6 +43,7 @@ namespace FredCom
             }
             br = new BinaryReader(sp.BaseStream);
             bw = new BinaryWriter(sp.BaseStream);
+            bw.Write((byte)0); //start new frame
             ReaderThread = new Thread(read);
             ReaderThread.Start();
         }
