@@ -2,10 +2,11 @@
 #define FREDCOM_H
 #include <stdint.h>
 #include <QueueRingBuffer.h>
+#include <Arduino.h>
 
 template <uint16_t receiveBufferSize, uint16_t sendBufferSize> class FredCom {
 public:
-	void (*messageCallback)(uint8_t op, QueueRingBuffer<receiveBufferSize>* data);
+	void(*messageCallback)(uint8_t op, QueueRingBuffer<receiveBufferSize>* data);
 
 	FredCom() {
 		messageCallback = 0;
@@ -59,7 +60,7 @@ public:
 				}
 				else {
 					in_nonZeroBytesRemaining = b - 1;
-					if (in_lastCode != 0xFF && !in_cobsIsInMessage) { //first byte doesnt mean 0
+					if (in_lastCode != 0xFF && in_cobsIsInMessage) { //first byte doesnt mean 0
 						receiveBuffer.enqueue(0);
 					}
 					in_lastCode = b;
@@ -75,9 +76,14 @@ public:
 					uint8_t op = receiveBuffer.dequeue();
 
 					bool frameValid = true;
+					uint8_t nackReason = 0;
+					uint8_t r1,r2;
 
 					if (frameValid && len != receiveBuffer.getContentLen()) {//check for correct length
 						frameValid = false;
+						r1 = len;
+						r2 = receiveBuffer.getContentLen();
+						nackReason = 1;
 					}
 					if (frameValid) {
 						uint8_t testChecksum = 127;
@@ -89,16 +95,21 @@ public:
 						}
 						if (testChecksum != checksum) {
 							frameValid = false;
+							nackReason = 2;
 						}
 					}
-					if (in_nonZeroBytesRemaining == 0 && frameValid) {
+					if (in_nonZeroBytesRemaining != 0) {
+						frameValid = false;
+						nackReason = 3;
+					}
+					if (frameValid) {
 						if (messageCallback) {
-							messageCallback(op, receiveBuffer);
+							messageCallback(op, &receiveBuffer);
 						}
 						sendACK(tid);
 					}
 					else {
-						sendNACK(tid); //nack transmission id
+						sendNACK(tid, nackReason,r1,r2); //nack transmission id
 					}//else error in transmission. ignore frame
 					receiveBuffer.clear();
 				}
@@ -109,7 +120,7 @@ public:
 private:
 	int in_nonZeroBytesRemaining;
 	bool in_cobsIsInMessage;
-	byte in_lastCode;
+	uint8_t in_lastCode;
 
 	uint8_t out_transmissionID;
 	uint16_t out_lastCodeIndex;
@@ -138,8 +149,14 @@ private:
 	void sendACK(uint8_t id) {
 		sendMessage(250, &id, 0, 1);
 	}
-	void sendNACK(uint8_t id) {
-		sendMessage(251, &id, 0, 1);
+	void sendNACK(uint8_t id, uint8_t reason, uint8_t r1, uint8_t r2) {
+		uint8_t data[4] = {
+			id,
+			reason,
+			r1,
+			r2
+		};
+		sendMessage(251, data, 0, 4);
 	}
 };
 #endif // !FREDCOM_H

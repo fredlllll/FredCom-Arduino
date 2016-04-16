@@ -109,7 +109,9 @@ namespace FredCom
                                     break;
                                 case 251:
                                     id = payloadList[0];
-                                    Console.WriteLine("NACK: " + id);
+                                    byte reason = payloadList[1];
+                                    byte r1 = payloadList[2], r2 = payloadList[3];
+                                    Console.WriteLine("NACK: " + id + " Reason: " + reason+ " R1: "+r1+ " R2: "+r2);
                                     TransmissionInfo ti = null;
                                     if(pastTransmissions.TryGetValue(id, out ti))
                                     {
