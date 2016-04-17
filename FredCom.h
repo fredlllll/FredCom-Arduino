@@ -1,7 +1,7 @@
 #ifndef FREDCOM_H
 #define FREDCOM_H
 #include <stdint.h>
-#include <QueueRingBuffer.h>
+#include "QueueRingBuffer.h"
 #include <Arduino.h>
 
 template <uint16_t receiveBufferSize, uint16_t sendBufferSize> class FredCom {
