@@ -6,6 +6,7 @@ void messageReceive(uint8_t op, QueueRingBuffer<100>* buffer);//function prototy
 
 void setup() {
   Serial.begin(115200);
+  comms.messageCallback = messageReceive;
   comms.setup();
 }
 
