@@ -4,6 +4,42 @@
 #include "QueueRingBuffer.h"
 #include <Arduino.h>
 
+enum varType {
+	var_uint8_t = 1,
+	var_uint16_t = 2,
+	var_uint32_t = 3,
+	var_uint64_t = 4,
+	var_int8_t = 5,
+	var_int16_t = 6,
+	var_int32_t = 7,
+	var_int64_t = 8,
+	var_float32_t = 9,
+	var_float64_t = 10,
+};
+
+struct varSendPackage {
+	varType type;
+	union
+	{
+		uint8_t var_uint8_t;
+		uint16_t var_uint16_t;
+		uint32_t var_uint32_t;
+		uint64_t var_uint64_t;
+		int8_t var_int8_t;
+		int16_t var_int16_t;
+		int32_t var_int32_t;
+		int64_t var_int64_t;
+#ifdef float32_t
+		float32_t var_float32_t;
+#else
+		float var_float32_t;
+#endif // float32_t
+#ifdef float64_t
+		float64_t var_float64_t;
+#endif // float64_t
+	};
+};
+
 template <uint16_t receiveBufferSize, uint16_t sendBufferSize> class FredCom {
 public:
 	void(*messageCallback)(uint8_t op, QueueRingBuffer<receiveBufferSize>* data);
@@ -18,8 +54,8 @@ public:
 		out_lastCodeIndex = 0;
 		out_transmissionID = 0;
 	}
-	
-	void setup(){
+
+	void setup() {
 		Serial.write((const uint8_t)0);//make sure that pc gets fresh frame before we send stuff
 	}
 
@@ -79,7 +115,7 @@ public:
 
 					bool frameValid = true;
 					uint8_t nackReason = 0;
-					uint8_t r1,r2;
+					uint8_t r1, r2;
 
 					if (frameValid && len != receiveBuffer.getContentLen()) {//check for correct length
 						frameValid = false;
@@ -111,7 +147,7 @@ public:
 						sendACK(tid);
 					}
 					else {
-						sendNACK(tid, nackReason,r1,r2); //nack transmission id
+						sendNACK(tid, nackReason, r1, r2); //nack transmission id
 					}//else error in transmission. ignore frame
 					receiveBuffer.clear();
 				}
@@ -119,6 +155,82 @@ public:
 			}
 		}
 	}
+
+	void send(uint8_t val) {
+		varSendPackage pack;
+		pack.type = varType::var_uint8_t;
+		pack.var_uint8_t = val;
+		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
+	}
+
+	void send(uint16_t val) {
+		varSendPackage pack;
+		pack.type = varType::var_uint16_t;
+		pack.var_uint16_t = val;
+		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
+	}
+
+	void send(uint32_t val) {
+		varSendPackage pack;
+		pack.type = varType::var_uint32_t;
+		pack.var_uint32_t = val;
+		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
+	}
+
+	void send(uint64_t val) {
+		varSendPackage pack;
+		pack.type = varType::var_uint64_t;
+		pack.var_uint64_t = val;
+		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
+	}
+
+	void send(int8_t val) {
+		varSendPackage pack;
+		pack.type = varType::var_int8_t;
+		pack.var_int8_t = val;
+		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
+	}
+
+	void send(int16_t val) {
+		varSendPackage pack;
+		pack.type = varType::var_int16_t;
+		pack.var_int16_t = val;
+		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
+	}
+
+	void send(int32_t val) {
+		varSendPackage pack;
+		pack.type = varType::var_int32_t;
+		pack.var_int32_t = val;
+		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
+	}
+
+	void send(int64_t val) {
+		varSendPackage pack;
+		pack.type = varType::var_int64_t;
+		pack.var_int64_t = val;
+		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
+	}
+
+#ifdef float32_t
+	void send(float32_t val) {
+#else
+	void send(float val) {
+#endif // float32_t
+		varSendPackage pack;
+		pack.type = varType::var_float32_t;
+		pack.var_float32_t = val;
+		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
+	}
+
+#ifdef float64_t
+	void send(float64_t val) {
+		varSendPackage pack;
+		pack.type = varType::var_float64_t;
+		pack.var_float64_t = val;
+		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
+	}
+#endif // float64_t
 private:
 	int in_nonZeroBytesRemaining;
 	bool in_cobsIsInMessage;

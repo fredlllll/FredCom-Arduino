@@ -2,21 +2,53 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
-using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace FredCom
 {
     public class FredCom
     {
+        enum VarType
+        {
+            uint8_t = 1,
+            uint16_t = 2,
+            uint32_t = 3,
+            uint64_t = 4,
+            int8_t = 5,
+            int16_t = 6,
+            int32_t = 7,
+            int64_t = 8,
+            float32_t = 9,
+            float64_t = 10,
+        }
+
         SerialPort sp;
         BinaryWriter bw;
         BinaryReader br;
         Thread ReaderThread;
 
         public delegate void receiveMessageDelegate(byte op, List<byte> data);
+        public delegate void receiveUInt8Delegate(byte val);
+        public delegate void receiveUInt16Delegate(UInt16 val);
+        public delegate void receiveUInt32Delegate(UInt32 val);
+        public delegate void receiveUInt64Delegate(UInt64 val);
+        public delegate void receiveInt8Delegate(sbyte val);
+        public delegate void receiveInt16Delegate(Int16 val);
+        public delegate void receiveInt32Delegate(Int32 val);
+        public delegate void receiveInt64Delegate(Int64 val);
+        public delegate void receiveFloat32Delegate(Single val);
+        public delegate void receiveFloat64Delegate(Double val);
         public event receiveMessageDelegate receiveMessage;
+        public event receiveUInt8Delegate receiveUInt8;
+        public event receiveUInt16Delegate receiveUInt16;
+        public event receiveUInt32Delegate receiveUInt32;
+        public event receiveUInt64Delegate receiveUInt64;
+        public event receiveInt8Delegate receiveInt8;
+        public event receiveInt16Delegate receiveInt16;
+        public event receiveInt32Delegate receiveInt32;
+        public event receiveInt64Delegate receiveInt64;
+        public event receiveFloat32Delegate receiveFloat32;
+        public event receiveFloat64Delegate receiveFloat64;
 
         public FredCom(String portname, int baudrate)
         {
@@ -47,11 +79,12 @@ namespace FredCom
             ReaderThread = new Thread(read);
             ReaderThread.Start();
         }
-		
-		public void Close(){
-			ReaderThread.Interrupt();
-			sp.Close();
-		}
+
+        public void Close()
+        {
+            ReaderThread.Interrupt();
+            sp.Close();
+        }
 
         void read()
         {
@@ -72,7 +105,7 @@ namespace FredCom
                     }
                     byte[] frameArray = frame.ToArray();
                     frameArray = COBSUnstuffData(frameArray);
-                    if(frameArray != null) //cobs cant decode
+                    if(frameArray != null) //cobs cant decode if this is null
                     {
                         payloadList.Clear();
                         byte tid = frameArray[0];
@@ -116,7 +149,7 @@ namespace FredCom
                                     id = payloadList[0];
                                     byte reason = payloadList[1];
                                     byte r1 = payloadList[2], r2 = payloadList[3];
-                                    Console.WriteLine("NACK: " + id + " Reason: " + reason+ " R1: "+r1+ " R2: "+r2);
+                                    Console.WriteLine("NACK: " + id + " Reason: " + reason + " R1: " + r1 + " R2: " + r2);
                                     TransmissionInfo ti = null;
                                     if(pastTransmissions.TryGetValue(id, out ti))
                                     {
@@ -127,7 +160,40 @@ namespace FredCom
                                 case 253:
                                 case 254:
                                 case 255:
-                                    //reserved
+                                    VarType type = (VarType)payloadList[0];
+                                    switch(type)
+                                    {
+                                        case VarType.uint8_t:
+                                            receiveUInt8?.Invoke(payloadList[1]);
+                                            break;
+                                        case VarType.uint16_t:
+                                            receiveUInt16?.Invoke(BitConverter.ToUInt16(payloadList.ToArray(), 1));
+                                            break;
+                                        case VarType.uint32_t:
+                                            receiveUInt32?.Invoke(BitConverter.ToUInt32(payloadList.ToArray(), 1));
+                                            break;
+                                        case VarType.uint64_t:
+                                            receiveUInt64?.Invoke(BitConverter.ToUInt64(payloadList.ToArray(), 1));
+                                            break;
+                                        case VarType.int8_t:
+                                            receiveInt8?.Invoke((sbyte)payloadList[1]);
+                                            break;
+                                        case VarType.int16_t:
+                                            receiveInt16?.Invoke(BitConverter.ToInt16(payloadList.ToArray(), 1));
+                                            break;
+                                        case VarType.int32_t:
+                                            receiveInt32?.Invoke(BitConverter.ToInt32(payloadList.ToArray(), 1));
+                                            break;
+                                        case VarType.int64_t:
+                                            receiveInt64?.Invoke(BitConverter.ToInt64(payloadList.ToArray(), 1));
+                                            break;
+                                        case VarType.float32_t:
+                                            receiveFloat32?.Invoke(BitConverter.ToSingle(payloadList.ToArray(), 1));
+                                            break;
+                                        case VarType.float64_t:
+                                            receiveFloat64?.Invoke(BitConverter.ToDouble(payloadList.ToArray(), 1));
+                                            break;
+                                    }
                                     break;
                                 default:
                                     receiveMessage?.Invoke(op, payloadList);
@@ -140,9 +206,10 @@ namespace FredCom
                 {
 
                 }
-				catch(ThreadInterruptedException){
-					break;
-				}
+                catch(ThreadInterruptedException)
+                {
+                    break;
+                }
                 catch(Exception e)
                 {
                     Console.WriteLine("leaving read loop unexpectedly:");
