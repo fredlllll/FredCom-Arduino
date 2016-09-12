@@ -4,6 +4,9 @@
 #include "QueueRingBuffer.h"
 #include <Arduino.h>
 
+//#define USEFLOAT32
+//#define USEFLOAT64
+
 enum varType {
 	var_uint8_t = 1,
 	var_uint16_t = 2,
@@ -29,20 +32,40 @@ struct varSendPackage {
 		int16_t var_int16_t;
 		int32_t var_int32_t;
 		int64_t var_int64_t;
-#ifdef float32_t
+#ifdef USEFLOAT32
 		float32_t var_float32_t;
 #else
 		float var_float32_t;
-#endif // float32_t
-#ifdef float64_t
+#endif // USEFLOAT32
+#ifdef USEFLOAT64
 		float64_t var_float64_t;
-#endif // float64_t
+#else
+		double var_float64_t;
+#endif // USEFLOAT64
 	};
 };
 
 template <uint16_t receiveBufferSize, uint16_t sendBufferSize> class FredCom {
 public:
 	void(*messageCallback)(uint8_t op, QueueRingBuffer<receiveBufferSize>* data);
+	void(*uint8Callback)(uint8_t val);
+	void(*uint16Callback)(uint16_t val);
+	void(*uint32Callback)(uint32_t val);
+	void(*uint64Callback)(uint64_t val);
+	void(*int8Callback)(int8_t val);
+	void(*int16Callback)(int16_t val);
+	void(*int32Callback)(int32_t val);
+	void(*int64Callback)(int64_t val);
+#ifdef USEFLOAT32
+	void(*float32Callback)(float32_t val);
+#else
+	void(*float32Callback)(float val);
+#endif
+#ifdef USEFLOAT64
+	void(*float64Callback)(float64_t val);
+#else
+	void(*float64Callback)(double val);
+#endif
 
 	FredCom() {
 		messageCallback = 0;
@@ -141,8 +164,81 @@ public:
 						nackReason = 3;
 					}
 					if (frameValid) {
-						if (messageCallback) {
-							messageCallback(op, &receiveBuffer);
+						switch (op)
+						{
+						case 250:
+							break;
+						case 251:
+							break;
+						case 252:
+							break;
+						case 253:
+							break;
+						case 254:
+							break;
+						case 255:
+						{
+							varSendPackage *pckg = (varSendPackage*)receiveBuffer.getBuffer();
+							switch (pckg->type)
+							{
+							case varType::var_uint8_t:
+								if (uint8Callback) {
+									uint8Callback(pckg->var_uint8_t);
+								}
+								break;
+							case varType::var_uint16_t:
+								if (uint16Callback) {
+									uint16Callback(pckg->var_uint16_t);
+								}
+								break;
+							case varType::var_uint32_t:
+								if (uint32Callback) {
+									uint32Callback(pckg->var_uint32_t);
+								}
+								break;
+							case varType::var_uint64_t:
+								if (uint64Callback) {
+									uint64Callback(pckg->var_uint64_t);
+								}
+								break;
+							case varType::var_int8_t:
+								if (int8Callback) {
+									int8Callback(pckg->var_int8_t);
+								}
+								break;
+							case varType::var_int16_t:
+								if (int16Callback) {
+									int16Callback(pckg->var_int16_t);
+								}
+								break;
+							case varType::var_int32_t:
+								if (int32Callback) {
+									int32Callback(pckg->var_int32_t);
+								}
+								break;
+							case varType::var_int64_t:
+								if (int64Callback) {
+									int64Callback(pckg->var_int64_t);
+								}
+								break;
+							case varType::var_float32_t:
+								if (float32Callback) {
+									float32Callback(pckg->var_float32_t);
+								}
+								break;
+							case varType::var_float64_t:
+								if (float64Callback) {
+									float64Callback(pckg->var_float64_t);
+								}
+								break;
+							}
+						}
+						break;
+						default:
+							if (messageCallback) {
+								messageCallback(op, &receiveBuffer);
+							}
+							break;
 						}
 						sendACK(tid);
 					}
@@ -212,25 +308,27 @@ public:
 		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
 	}
 
-#ifdef float32_t
+#ifdef USEFLOAT32
 	void send(float32_t val) {
 #else
 	void send(float val) {
-#endif // float32_t
+#endif // USEFLOAT32
 		varSendPackage pack;
 		pack.type = varType::var_float32_t;
 		pack.var_float32_t = val;
 		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
 	}
 
-#ifdef float64_t
+#ifdef USEFLOAT64
 	void send(float64_t val) {
+#else
+	void send(double val) {
+#endif // USEFLOAT64
 		varSendPackage pack;
 		pack.type = varType::var_float64_t;
 		pack.var_float64_t = val;
 		sendMessage(255, (uint8_t*)&pack, 0, sizeof(pack));
 	}
-#endif // float64_t
 private:
 	int in_nonZeroBytesRemaining;
 	bool in_cobsIsInMessage;
@@ -272,5 +370,5 @@ private:
 		};
 		sendMessage(251, data, 0, 4);
 	}
-};
+	};
 #endif // !FREDCOM_H

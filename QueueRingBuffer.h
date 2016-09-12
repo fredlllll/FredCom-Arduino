@@ -78,6 +78,10 @@ public:
 		return size;
 	}
 
+	uint8_t* getBuffer() {
+		return buffer;
+	}
+
 private:
 	uint16_t offset;
 	uint16_t len;

@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace FredCom
 {
     public class FredCom
     {
-        enum VarType
+        enum VarType : byte
         {
             uint8_t = 1,
             uint16_t = 2,
@@ -20,6 +21,33 @@ namespace FredCom
             int64_t = 8,
             float32_t = 9,
             float64_t = 10,
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        struct VarSendPackage
+        {
+            [FieldOffset(0)]
+            public VarType type;
+            [FieldOffset(1)]
+            public byte var_uint8_t;
+            [FieldOffset(1)]
+            public UInt16 var_uint16_t;
+            [FieldOffset(1)]
+            public UInt32 var_uint32_t;
+            [FieldOffset(1)]
+            public UInt64 var_uint64_t;
+            [FieldOffset(1)]
+            public sbyte var_int8_t;
+            [FieldOffset(1)]
+            public Int16 var_int16_t;
+            [FieldOffset(1)]
+            public Int32 var_int32_t;
+            [FieldOffset(1)]
+            public Int64 var_int64_t;
+            [FieldOffset(1)]
+            public float var_float32_t;
+            [FieldOffset(1)]
+            public double var_float64_t;
         }
 
         SerialPort sp;
@@ -157,41 +185,45 @@ namespace FredCom
                                     }
                                     break;
                                 case 252:
+                                    break;
                                 case 253:
+                                    break;
                                 case 254:
+                                    break;
                                 case 255:
-                                    VarType type = (VarType)payloadList[0];
-                                    switch(type)
+                                    byte[] arr = payloadList.ToArray();
+                                    VarSendPackage pckg = StructFromBytes<VarSendPackage>(arr);
+                                    switch(pckg.type)
                                     {
                                         case VarType.uint8_t:
-                                            receiveUInt8?.Invoke(payloadList[1]);
+                                            receiveUInt8?.Invoke(pckg.var_uint8_t);
                                             break;
                                         case VarType.uint16_t:
-                                            receiveUInt16?.Invoke(BitConverter.ToUInt16(payloadList.ToArray(), 1));
+                                            receiveUInt16?.Invoke(pckg.var_uint16_t);
                                             break;
                                         case VarType.uint32_t:
-                                            receiveUInt32?.Invoke(BitConverter.ToUInt32(payloadList.ToArray(), 1));
+                                            receiveUInt32?.Invoke(pckg.var_uint32_t);
                                             break;
                                         case VarType.uint64_t:
-                                            receiveUInt64?.Invoke(BitConverter.ToUInt64(payloadList.ToArray(), 1));
+                                            receiveUInt64?.Invoke(pckg.var_uint64_t);
                                             break;
                                         case VarType.int8_t:
-                                            receiveInt8?.Invoke((sbyte)payloadList[1]);
+                                            receiveInt8?.Invoke(pckg.var_int8_t);
                                             break;
                                         case VarType.int16_t:
-                                            receiveInt16?.Invoke(BitConverter.ToInt16(payloadList.ToArray(), 1));
+                                            receiveInt16?.Invoke(pckg.var_int16_t);
                                             break;
                                         case VarType.int32_t:
-                                            receiveInt32?.Invoke(BitConverter.ToInt32(payloadList.ToArray(), 1));
+                                            receiveInt32?.Invoke(pckg.var_int32_t);
                                             break;
                                         case VarType.int64_t:
-                                            receiveInt64?.Invoke(BitConverter.ToInt64(payloadList.ToArray(), 1));
+                                            receiveInt64?.Invoke(pckg.var_int64_t);
                                             break;
                                         case VarType.float32_t:
-                                            receiveFloat32?.Invoke(BitConverter.ToSingle(payloadList.ToArray(), 1));
+                                            receiveFloat32?.Invoke(pckg.var_float32_t);
                                             break;
                                         case VarType.float64_t:
-                                            receiveFloat64?.Invoke(BitConverter.ToDouble(payloadList.ToArray(), 1));
+                                            receiveFloat64?.Invoke(pckg.var_float64_t);
                                             break;
                                     }
                                     break;
@@ -252,6 +284,92 @@ namespace FredCom
             SendTransmission(ti);
         }
 
+        public void Send(byte val)
+        {
+            VarSendPackage pckg = new VarSendPackage();
+            pckg.type = VarType.uint8_t;
+            pckg.var_uint8_t = val;
+            Send(pckg);
+        }
+
+        public void Send(UInt16 val)
+        {
+            VarSendPackage pckg = new VarSendPackage();
+            pckg.type = VarType.uint16_t;
+            pckg.var_uint16_t = val;
+            Send(pckg);
+        }
+
+        public void Send(UInt32 val)
+        {
+            VarSendPackage pckg = new VarSendPackage();
+            pckg.type = VarType.uint32_t;
+            pckg.var_uint32_t = val;
+            Send(pckg);
+        }
+
+        public void Send(UInt64 val)
+        {
+            VarSendPackage pckg = new VarSendPackage();
+            pckg.type = VarType.uint64_t;
+            pckg.var_uint64_t = val;
+            Send(pckg);
+        }
+
+        public void Send(sbyte val)
+        {
+            VarSendPackage pckg = new VarSendPackage();
+            pckg.type = VarType.int8_t;
+            pckg.var_int8_t = val;
+            Send(pckg);
+        }
+
+        public void Send(Int16 val)
+        {
+            VarSendPackage pckg = new VarSendPackage();
+            pckg.type = VarType.int16_t;
+            pckg.var_int16_t = val;
+            Send(pckg);
+        }
+
+        public void Send(Int32 val)
+        {
+            VarSendPackage pckg = new VarSendPackage();
+            pckg.type = VarType.int32_t;
+            pckg.var_int32_t = val;
+            Send(pckg);
+        }
+
+        public void Send(Int64 val)
+        {
+            VarSendPackage pckg = new VarSendPackage();
+            pckg.type = VarType.int64_t;
+            pckg.var_int64_t = val;
+            Send(pckg);
+        }
+
+        public void Send(float val)
+        {
+            VarSendPackage pckg = new VarSendPackage();
+            pckg.type = VarType.float32_t;
+            pckg.var_float32_t = val;
+            Send(pckg);
+        }
+
+        public void Send(double val)
+        {
+            VarSendPackage pckg = new VarSendPackage();
+            pckg.type = VarType.float64_t;
+            pckg.var_float64_t = val;
+            Send(pckg);
+        }
+
+        void Send(VarSendPackage pckg)
+        {
+            byte[] bytes = StructToBytes(pckg);
+            SendMessage(255, bytes, 0, (byte)bytes.Length);
+        }
+
         void SendTransmission(TransmissionInfo ti)
         {
             List<byte> buffer = new List<byte>();
@@ -267,6 +385,33 @@ namespace FredCom
 
             bw.Write(encoded, 0, encoded.Length);
             bw.Write((byte)0);
+        }
+
+        static byte[] StructToBytes<T>(T str) where T : struct
+        {
+            int size = Marshal.SizeOf(str);
+            byte[] arr = new byte[size];
+
+            IntPtr ptr = Marshal.AllocHGlobal(size);
+            Marshal.StructureToPtr(str, ptr, true);
+            Marshal.Copy(ptr, arr, 0, size);
+            Marshal.FreeHGlobal(ptr);
+            return arr;
+        }
+
+        static T StructFromBytes<T>(byte[] arr) where T : struct
+        {
+            T str = new T();
+
+            int size = Marshal.SizeOf(str);
+            IntPtr ptr = Marshal.AllocHGlobal(size);
+
+            Marshal.Copy(arr, 0, ptr, size);
+
+            str = (T)Marshal.PtrToStructure(ptr, str.GetType());
+            Marshal.FreeHGlobal(ptr);
+
+            return str;
         }
 
         static byte[] COBSStuffData(byte[] data)
